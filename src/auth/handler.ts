@@ -134,7 +134,7 @@ function renderForm(opts: { oauthState: string; error?: string }): string {
 <body>
   <div class="card">
     <h1>Connect to Codesphere</h1>
-    <p>Enter your Codesphere API key to give Claude access to your workspaces. <a href="https://codesphere.com/ide/settings?tab=apiKeys" target="_blank">Create an API key</a></p>
+    <p>Enter your Codesphere API key to give Claude access to your workspaces. To create one, open <a href="https://codesphere.com" target="_blank">Codesphere</a> and go to your avatar menu (top right) → API keys.</p>
     ${safeError ? `<div class="error">${safeError}</div>` : ""}
     <form method="POST" action="/authorize">
       <input type="hidden" name="oauthState" value="${safeState}" />
