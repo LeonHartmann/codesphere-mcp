@@ -67,4 +67,51 @@ export function registerDomainTools(
       }
     }
   );
+
+  server.tool(
+    "list_domains",
+    "List all custom domains for a team with their routing configuration",
+    {
+      teamId: z
+        .string()
+        .optional()
+        .describe("Team ID (uses default if not provided)"),
+    },
+    async ({ teamId }) => {
+      const resolvedTeamId = teamId || defaultTeamId;
+      if (!resolvedTeamId) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: No teamId provided and no default CS_TEAM_ID configured.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const domains = await client.listDomains(resolvedTeamId);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(domains, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Error listing domains: ${error.message}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
 }

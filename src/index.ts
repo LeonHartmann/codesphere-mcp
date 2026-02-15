@@ -7,6 +7,8 @@ import { registerWorkspaceTools } from "./tools/workspaces.js";
 import { registerDeployTools } from "./tools/deploy.js";
 import { registerLogTools } from "./tools/logs.js";
 import { registerDomainTools } from "./tools/domains.js";
+import { registerEnvTools } from "./tools/env.js";
+import { registerExecuteTools } from "./tools/execute.js";
 import type { Env, Props } from "./types.js";
 
 // McpAgent Durable Object — one instance per authenticated user session
@@ -24,6 +26,8 @@ export class CodesphereAgent extends McpAgent<Env, Record<string, never>, Props>
     registerDeployTools(this.server, client);
     registerLogTools(this.server, client);
     registerDomainTools(this.server, client, defaultTeamId);
+    registerEnvTools(this.server, client);
+    registerExecuteTools(this.server, client);
   }
 }
 

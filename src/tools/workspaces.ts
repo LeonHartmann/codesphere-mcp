@@ -168,4 +168,89 @@ export function registerWorkspaceTools(
       }
     }
   );
+
+  server.tool(
+    "delete_workspace",
+    "Permanently delete a workspace. This cannot be undone.",
+    {
+      workspaceId: z.string().describe("The workspace ID to delete"),
+    },
+    async ({ workspaceId }) => {
+      try {
+        await client.deleteWorkspace(workspaceId);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace ${workspaceId} deleted successfully.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error deleting workspace: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "scale_workspace",
+    "Scale a workspace by changing the number of replicas for horizontal scaling",
+    {
+      workspaceId: z.string().describe("The workspace ID to scale"),
+      replicas: z.number().min(1).describe("Number of replicas"),
+    },
+    async ({ workspaceId, replicas }) => {
+      try {
+        await client.updateWorkspace(workspaceId, { replicas });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace ${workspaceId} scaled to ${replicas} replica${replicas > 1 ? "s" : ""}.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error scaling workspace: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "git_info",
+    "Get the current git HEAD info (branch, commit) for a workspace",
+    {
+      workspaceId: z.string().describe("The workspace ID"),
+    },
+    async ({ workspaceId }) => {
+      try {
+        const head = await client.gitHead(workspaceId);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(head, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error getting git info: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
 }

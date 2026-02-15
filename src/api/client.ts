@@ -86,12 +86,42 @@ export class CodesphereClient {
     return this.request("DELETE", `/workspaces/${workspaceId}`);
   }
 
+  async updateWorkspace(
+    workspaceId: string,
+    params: { replicas?: number }
+  ): Promise<any> {
+    return this.request("PUT", `/workspaces/${workspaceId}`, params);
+  }
+
+  // Execute
+  async executeCommand(workspaceId: string, command: string): Promise<any> {
+    return this.request("POST", `/workspaces/${workspaceId}/execute`, {
+      command,
+    });
+  }
+
+  // Environment variables
+  async listEnvVars(workspaceId: string): Promise<any> {
+    return this.request("GET", `/workspaces/${workspaceId}/env-vars`);
+  }
+
+  async setEnvVars(
+    workspaceId: string,
+    envVars: Record<string, string>
+  ): Promise<any> {
+    return this.request("POST", `/workspaces/${workspaceId}/env-vars`, envVars);
+  }
+
   // Git
   async gitPull(workspaceId: string, remote: string = "origin"): Promise<any> {
     return this.request(
       "POST",
       `/workspaces/${workspaceId}/git/pull/${remote}`
     );
+  }
+
+  async gitHead(workspaceId: string): Promise<any> {
+    return this.request("GET", `/workspaces/${workspaceId}/git/head`);
   }
 
   // Pipeline (generic stage: "prepare" | "test" | "run")

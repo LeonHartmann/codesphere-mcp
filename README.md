@@ -18,11 +18,18 @@ Your API key is stored encrypted in your personal OAuth session. It is never sha
 |------|-------------|----------------|
 | `list_workspaces` | List all workspaces for a team with their status, URL, and git info | `teamId` (optional) |
 | `get_workspace_status` | Get detailed status including pipeline state for all stages | `workspaceId` |
+| `create_workspace` | Create a new workspace from a git repository | `gitUrl`, `name`, `planId`, `branch` |
+| `delete_workspace` | Permanently delete a workspace | `workspaceId` |
 | `deploy` | Pull latest code and run full CI pipeline (git pull, prepare, run) | `workspaceId`, `skipPrepare`, `waitForPrepare` |
 | `stop_workspace` | Stop a running workspace | `workspaceId` |
 | `restart_workspace` | Restart without rebuilding (stop, start) | `workspaceId` |
-| `create_workspace` | Create a new workspace from a git repository | `gitUrl`, `name`, `planId`, `branch` |
+| `scale_workspace` | Scale a workspace by changing the number of replicas | `workspaceId`, `replicas` |
+| `execute_command` | Run a shell command in a workspace | `workspaceId`, `command` |
+| `set_env_vars` | Set environment variables on a workspace | `workspaceId`, `envVars` |
+| `list_env_vars` | List all environment variables on a workspace | `workspaceId` |
+| `git_info` | Get current git HEAD info (branch, commit) | `workspaceId` |
 | `view_logs` | Get recent logs from a pipeline stage | `workspaceId`, `stage`, `lines` |
+| `list_domains` | List all custom domains for a team | `teamId` (optional) |
 | `switch_domain` | Route a custom domain to a different workspace | `domainName`, `workspaceId`, `path` |
 
 ## Example Conversations
