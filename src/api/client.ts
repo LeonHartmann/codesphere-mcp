@@ -34,7 +34,10 @@ export class CodesphereClient {
 
     if (!res.ok) {
       const text = await res.text().catch(() => "Unknown error");
-      throw new CodesphereApiError(res.status, `${method} ${path}`, text);
+      const safeText = text
+        .replace(/Bearer\s+[\w._-]+/gi, "Bearer [REDACTED]")
+        .replace(/api[_-]?key[\s:=]+[\w._-]+/gi, "api_key [REDACTED]");
+      throw new CodesphereApiError(res.status, `${method} ${path}`, safeText);
     }
 
     if (res.status === 204) return undefined as T;

@@ -3,6 +3,15 @@ import type { Env } from "../types.js";
 
 const app = new Hono<{ Bindings: Env }>();
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Health check
 app.get("/", (c) => {
   return c.json({
@@ -21,7 +30,10 @@ app.get("/authorize", async (c) => {
   }
 
   const oauthState = btoa(JSON.stringify(oauthReqInfo));
-  return c.html(renderForm({ oauthState }));
+  return c.html(renderForm({ oauthState }), 200, {
+    "Content-Security-Policy":
+      "default-src 'self'; script-src 'none'; style-src 'unsafe-inline';",
+  });
 });
 
 // POST /authorize — validate key and complete OAuth
@@ -45,15 +57,23 @@ app.post("/authorize", async (c) => {
       headers: { Authorization: `Bearer ${apiKey}` },
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(`HTTP ${res.status}: ${text}`);
+      throw new Error(`HTTP ${res.status}`);
     }
     teams = (await res.json()) as any[];
-  } catch (err: any) {
+  } catch {
     return c.html(
       renderForm({
         oauthState,
-        error: `Invalid API key. Could not authenticate with Codesphere. (${err.message})`,
+        error: "Invalid API key. Could not authenticate with Codesphere.",
+      })
+    );
+  }
+
+  if (!Array.isArray(teams) || teams.length === 0 || !teams[0]?.id) {
+    return c.html(
+      renderForm({
+        oauthState,
+        error: "No teams found. Ensure your API key has the correct permissions.",
       })
     );
   }
@@ -69,16 +89,16 @@ app.post("/authorize", async (c) => {
   // Complete the OAuth authorization — stores csToken in encrypted props
   const { redirectTo } = await c.env.OAUTH_PROVIDER.completeAuthorization({
     request: oauthReqInfo,
-    userId: teams[0]?.id ? `cs-team-${teams[0].id}` : "cs-user",
+    userId: `cs-team-${teams[0].id}`,
     metadata: {
-      label: teams[0]?.name
+      label: teams[0].name
         ? `Codesphere (${teams[0].name})`
         : "Codesphere",
     },
     scope: oauthReqInfo.scope,
     props: {
       csToken: apiKey,
-      csTeamId: teams[0]?.id?.toString(),
+      csTeamId: teams[0].id.toString(),
     },
   });
 
@@ -86,6 +106,9 @@ app.post("/authorize", async (c) => {
 });
 
 function renderForm(opts: { oauthState: string; error?: string }): string {
+  const safeState = escapeHtml(opts.oauthState || "");
+  const safeError = opts.error ? escapeHtml(opts.error) : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -112,9 +135,9 @@ function renderForm(opts: { oauthState: string; error?: string }): string {
   <div class="card">
     <h1>Connect to Codesphere</h1>
     <p>Enter your Codesphere API key to give Claude access to your workspaces. <a href="https://codesphere.com/ide/settings?tab=apiKeys" target="_blank">Create an API key</a></p>
-    ${opts.error ? `<div class="error">${opts.error}</div>` : ""}
+    ${safeError ? `<div class="error">${safeError}</div>` : ""}
     <form method="POST" action="/authorize">
-      <input type="hidden" name="oauthState" value="${opts.oauthState}" />
+      <input type="hidden" name="oauthState" value="${safeState}" />
       <label for="apiKey">API Key</label>
       <input type="password" id="apiKey" name="apiKey" placeholder="Your Codesphere API key" required autofocus />
       <button type="submit">Connect</button>
