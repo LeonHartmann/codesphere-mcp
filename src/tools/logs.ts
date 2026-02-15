@@ -33,14 +33,16 @@ export function registerLogTools(
 
         // Handle various log response formats
         let logText: string;
-        if (typeof logs === "string") {
+        if (!logs) {
+          logText = "";
+        } else if (typeof logs === "string") {
           logText = logs;
-        } else if (logs?.output) {
+        } else if (logs.output) {
           logText = logs.output;
-        } else if (logs?.logs) {
+        } else if (logs.logs) {
           logText = logs.logs;
         } else {
-          logText = JSON.stringify(logs, null, 2);
+          logText = JSON.stringify(logs, null, 2) ?? "";
         }
 
         // Truncate to requested number of lines

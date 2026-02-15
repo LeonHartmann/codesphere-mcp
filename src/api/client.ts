@@ -43,9 +43,12 @@ export class CodesphereClient {
     if (res.status === 204) return undefined as T;
 
     const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) return undefined as T;
+    if (contentType.includes("application/json")) {
+      return res.json() as Promise<T>;
+    }
 
-    return res.json() as Promise<T>;
+    // Return plain text for non-JSON responses (e.g. logs)
+    return res.text() as Promise<T>;
   }
 
   // Teams
