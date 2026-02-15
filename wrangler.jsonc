@@ -1,27 +1,31 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "codesphere-mcp",
-  "main": "src/index.ts",
-  "compatibility_date": "2025-01-01",
-  "compatibility_flags": ["nodejs_compat"],
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "MCP_OBJECT",
-        "class_name": "CodesphereAgent"
-      }
-    ]
-  },
-  "kv_namespaces": [
-    {
-      "binding": "OAUTH_KV",
-      "id": "PLACEHOLDER_REPLACE_AFTER_KV_CREATE"
-    }
-  ],
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_sqlite_classes": ["CodesphereAgent"]
-    }
-  ]
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "codesphere-mcp",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-01-01",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "MCP_OBJECT",
+				"class_name": "CodesphereAgent"
+			}
+		]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "OAUTH_KV",
+			"id": "407123fa7ba8418ea34fd8ecaf7cf84f"
+		}
+	],
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_sqlite_classes": [
+				"CodesphereAgent"
+			]
+		}
+	]
 }
