@@ -127,6 +127,7 @@ function renderForm(opts: { oauthState: string; error?: string }): string {
     button { background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 6px; font-size: 1rem; cursor: pointer; width: 100%; font-weight: 500; }
     button:hover { background: #1d4ed8; }
     .error { background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9rem; }
+    .privacy { background: #f0fdf4; color: #15803d; padding: 12px; border-radius: 6px; margin-bottom: 20px; font-size: 0.8rem; line-height: 1.5; }
     a { color: #2563eb; text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
@@ -142,6 +143,7 @@ function renderForm(opts: { oauthState: string; error?: string }): string {
       <input type="password" id="apiKey" name="apiKey" placeholder="Your Codesphere API key" required autofocus />
       <button type="submit">Connect</button>
     </form>
+    <div class="privacy">Your API key is encrypted and stored securely in your personal session. It is never shared with other users, never logged, and never visible in plaintext.</div>
   </div>
 </body>
 </html>`;
