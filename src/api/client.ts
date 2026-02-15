@@ -42,13 +42,16 @@ export class CodesphereClient {
 
     if (res.status === 204) return undefined as T;
 
+    const text = await res.text();
+    if (!text) return undefined as T;
+
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
-      return res.json() as Promise<T>;
+      return JSON.parse(text) as T;
     }
 
     // Return plain text for non-JSON responses (e.g. logs)
-    return res.text() as Promise<T>;
+    return text as T;
   }
 
   // Teams
@@ -93,7 +96,7 @@ export class CodesphereClient {
     workspaceId: string,
     params: { replicas?: number }
   ): Promise<any> {
-    return this.request("PUT", `/workspaces/${workspaceId}`, params);
+    return this.request("PATCH", `/workspaces/${workspaceId}`, params);
   }
 
   // Execute
@@ -112,7 +115,8 @@ export class CodesphereClient {
     workspaceId: string,
     envVars: Record<string, string>
   ): Promise<any> {
-    return this.request("POST", `/workspaces/${workspaceId}/env-vars`, envVars);
+    const body = Object.entries(envVars).map(([name, value]) => ({ name, value }));
+    return this.request("PUT", `/workspaces/${workspaceId}/env-vars`, body);
   }
 
   // Git
@@ -150,11 +154,16 @@ export class CodesphereClient {
   }
 
   // Logs
-  async getLogs(workspaceId: string, stage: string, step: number = 0): Promise<any> {
-    return this.request(
-      "GET",
-      `/workspaces/${workspaceId}/logs/${stage}/${step}`
-    );
+  async getLogs(
+    workspaceId: string,
+    stage: string,
+    step: number = 0,
+    server?: string
+  ): Promise<any> {
+    const path = server
+      ? `/workspaces/${workspaceId}/logs/${stage}/${step}/server/${server}`
+      : `/workspaces/${workspaceId}/logs/${stage}/${step}`;
+    return this.request("GET", path);
   }
 
   // Domains

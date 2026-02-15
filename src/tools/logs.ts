@@ -8,7 +8,7 @@ export function registerLogTools(
 ) {
   server.tool(
     "view_logs",
-    "Get recent logs from a workspace's pipeline stage (prepare, test, or run). Returns log output for the specified stage and step.",
+    "Get recent logs from a workspace's pipeline stage (prepare, test, or run). For landscape deployments, specify the server name (e.g. 'app'). If omitted, auto-detects from pipeline status.",
     {
       workspaceId: z.string().describe("The workspace ID"),
       stage: z
@@ -26,10 +26,30 @@ export function registerLogTools(
         .optional()
         .default(50)
         .describe("Number of recent log lines to return (default: 50)"),
+      server: z
+        .string()
+        .optional()
+        .describe("Server/service name for landscape deployments (e.g. 'app'). Auto-detected if omitted."),
     },
-    async ({ workspaceId, stage, step, lines }) => {
+    async ({ workspaceId, stage, step, lines, server: serverName }) => {
       try {
-        const logs = await client.getLogs(workspaceId, stage, step);
+        let logs: any;
+
+        // For landscape deployments, auto-detect the server if not specified
+        let resolvedServer = serverName;
+        if (!resolvedServer) {
+          const pipeline = await client.getPipelineStatus(workspaceId, stage);
+          if (Array.isArray(pipeline) && pipeline.length > 1) {
+            const service = pipeline.find(
+              (p: any) => p.server && p.server !== "codesphere-ide"
+            );
+            if (service?.server) {
+              resolvedServer = service.server;
+            }
+          }
+        }
+
+        logs = await client.getLogs(workspaceId, stage, step, resolvedServer);
 
         // Handle various log response formats
         let logText: string;

@@ -9,7 +9,7 @@ export function registerDeployTools(
 ) {
   server.tool(
     "deploy",
-    "Deploy a workspace by pulling latest code and running the full CI pipeline. Chains: git pull → prepare (build) → wait for completion → start run. This is the main deployment tool.",
+    "Deploy a workspace by pulling latest code and running the full CI pipeline. For landscape workspaces: git pull → prepare → sync landscape. For standard workspaces: git pull → prepare → start run.",
     {
       workspaceId: z.string().describe("The workspace ID to deploy"),
       remote: z
@@ -32,10 +32,14 @@ export function registerDeployTools(
       const steps: string[] = [];
 
       try {
-        // Step 1: Git pull
+        // Step 1: Git pull (may fail on fresh workspaces — non-fatal)
         steps.push("git pull...");
-        await client.gitPull(workspaceId, remote);
-        steps.push("git pull complete");
+        try {
+          await client.gitPull(workspaceId, remote);
+          steps.push("git pull complete");
+        } catch {
+          steps.push("git pull skipped (workspace not yet initialized)");
+        }
 
         // Step 2: Prepare (build)
         if (!skipPrepare) {
@@ -49,10 +53,9 @@ export function registerDeployTools(
               () => client.getPipelineStatus(workspaceId, "prepare"),
               (statuses: any[]) => {
                 if (!Array.isArray(statuses) || statuses.length === 0) return false;
-                // Done when all replicas are no longer running/pending
                 return statuses.every((s: any) => {
                   const state = s.state || "";
-                  return state === "succeeded" || state === "failed" || state === "stopped";
+                  return state === "success" || state === "succeeded" || state === "failed" || state === "stopped";
                 });
               },
               3000,
@@ -78,15 +81,18 @@ export function registerDeployTools(
           steps.push("(skipped prepare)");
         }
 
-        // Step 3: Stop current run (ignore errors — might not be running)
-        steps.push("stopping current run...");
-        await client.stopPipelineStage(workspaceId, "run").catch(() => {});
-        steps.push("run stopped");
-
-        // Step 4: Start run
-        steps.push("starting run stage...");
-        await client.startPipelineStage(workspaceId, "run");
-        steps.push("run stage started");
+        // Step 3: Sync landscape (this also starts the run stage for landscape workspaces)
+        steps.push("syncing landscape...");
+        try {
+          await client.deployLandscape(workspaceId);
+          steps.push("landscape synced");
+        } catch {
+          // No landscape configured — fall back to manual run start
+          steps.push("no landscape configured, starting run directly...");
+          await client.stopPipelineStage(workspaceId, "run").catch(() => {});
+          await client.startPipelineStage(workspaceId, "run");
+          steps.push("run stage started");
+        }
 
         // Get workspace info for URL
         const workspace = await client.getWorkspace(workspaceId);
