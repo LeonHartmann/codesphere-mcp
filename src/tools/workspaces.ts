@@ -253,4 +253,138 @@ export function registerWorkspaceTools(
       }
     }
   );
+
+  server.tool(
+    "clone_workspace",
+    "Clone an existing workspace by creating a new one from the same git repo with the same settings and environment variables. Useful for creating staging copies of production.",
+    {
+      sourceWorkspaceId: z.string().describe("The workspace ID to clone from"),
+      name: z.string().describe("Name for the new workspace"),
+      teamId: z
+        .string()
+        .optional()
+        .describe("Team ID (uses default if not provided)"),
+    },
+    async ({ sourceWorkspaceId, name, teamId }) => {
+      const resolvedTeamId = teamId || defaultTeamId;
+      if (!resolvedTeamId) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: No teamId provided and no default CS_TEAM_ID configured.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        // Get source workspace details
+        const source = await client.getWorkspace(sourceWorkspaceId);
+
+        // Create new workspace with same settings
+        const newWs = await client.createWorkspace({
+          teamId: parseInt(resolvedTeamId, 10),
+          name,
+          planId: source.planId,
+          isPrivateRepo: source.isPrivateRepo,
+          replicas: source.replicas,
+          gitUrl: source.gitUrl,
+          initialBranch: source.initialBranch,
+        });
+
+        // Copy environment variables
+        let envCopied = false;
+        try {
+          const envVars = await client.listEnvVars(sourceWorkspaceId);
+          if (envVars && typeof envVars === "object" && Object.keys(envVars).length > 0) {
+            await client.setEnvVars(newWs.id.toString(), envVars);
+            envCopied = true;
+          }
+        } catch {
+          // Env var copy is best-effort
+        }
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Workspace cloned successfully!\n\nSource: ${sourceWorkspaceId} (${source.name})\nNew: ${newWs.id} (${name})\nGit: ${source.gitUrl} @ ${source.initialBranch}\nPlan: ${source.planId}\nEnv vars copied: ${envCopied ? "yes" : "no (none found or copy failed)"}\n\nThe new workspace is created but not deployed. Use deploy to build and start it.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error cloning workspace: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "workspace_summary",
+    "Get a complete summary of a workspace in one call: details, status, git info, environment variables, and pipeline state for all stages. Saves calling multiple tools individually.",
+    {
+      workspaceId: z.string().describe("The workspace ID"),
+    },
+    async ({ workspaceId }) => {
+      try {
+        const [workspace, wsStatus, gitHead, envVars, prepare, test, run] =
+          await Promise.all([
+            client.getWorkspace(workspaceId),
+            client.getWorkspaceStatus(workspaceId).catch(() => null),
+            client.gitHead(workspaceId).catch(() => null),
+            client.listEnvVars(workspaceId).catch(() => null),
+            client.getPipelineStatus(workspaceId, "prepare").catch(() => null),
+            client.getPipelineStatus(workspaceId, "test").catch(() => null),
+            client.getPipelineStatus(workspaceId, "run").catch(() => null),
+          ]);
+
+        const summary = {
+          workspace: {
+            id: workspace.id,
+            name: workspace.name,
+            planId: workspace.planId,
+            replicas: workspace.replicas,
+            devDomain: workspace.devDomain,
+            createdAt: workspace.createdAt,
+          },
+          isRunning: wsStatus?.isRunning ?? null,
+          git: {
+            url: workspace.gitUrl,
+            branch: workspace.initialBranch,
+            head: gitHead,
+          },
+          envVars: envVars
+            ? Object.keys(envVars)
+            : null,
+          pipeline: {
+            prepare: prepare?.[0]?.state ?? null,
+            test: test?.[0]?.state ?? null,
+            run: run?.[0]?.state ?? null,
+          },
+        };
+
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: JSON.stringify(summary, null, 2),
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error getting workspace summary: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
 }

@@ -170,4 +170,40 @@ export class CodesphereClient {
       connections
     );
   }
+
+  async createDomain(teamId: string, domainName: string): Promise<any> {
+    return this.request(
+      "POST",
+      `/domains/team/${teamId}/domain/${domainName}`
+    );
+  }
+
+  async deleteDomain(teamId: string, domainName: string): Promise<void> {
+    return this.request(
+      "DELETE",
+      `/domains/team/${teamId}/domain/${domainName}`
+    );
+  }
+
+  async verifyDomain(teamId: string, domainName: string): Promise<any> {
+    return this.request(
+      "POST",
+      `/domains/team/${teamId}/domain/${domainName}/verify`
+    );
+  }
+
+  // Landscape
+  async deployLandscape(workspaceId: string, profile?: string): Promise<any> {
+    const path = profile
+      ? `/workspaces/${workspaceId}/landscape/deploy/${profile}`
+      : `/workspaces/${workspaceId}/landscape/deploy`;
+    return this.request("POST", path);
+  }
+
+  async teardownLandscape(workspaceId: string): Promise<any> {
+    return this.request(
+      "POST",
+      `/workspaces/${workspaceId}/landscape/teardown`
+    );
+  }
 }

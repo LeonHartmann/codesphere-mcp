@@ -114,4 +114,145 @@ export function registerDomainTools(
       }
     }
   );
+
+  server.tool(
+    "create_domain",
+    "Register a new custom domain for a team. After creating, you'll need to set up DNS records and verify it.",
+    {
+      teamId: z
+        .string()
+        .optional()
+        .describe("Team ID (uses default if not provided)"),
+      domainName: z
+        .string()
+        .describe("The domain name to register (e.g., myapp.example.com)"),
+    },
+    async ({ teamId, domainName }) => {
+      const resolvedTeamId = teamId || defaultTeamId;
+      if (!resolvedTeamId) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: No teamId provided and no default CS_TEAM_ID configured.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await client.createDomain(resolvedTeamId, domainName);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Domain ${domainName} created.\n\n${JSON.stringify(result, null, 2)}\n\nNext: configure your DNS records to point to Codesphere, then use verify_domain to verify.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error creating domain: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "delete_domain",
+    "Remove a custom domain from a team. This cannot be undone.",
+    {
+      teamId: z
+        .string()
+        .optional()
+        .describe("Team ID (uses default if not provided)"),
+      domainName: z
+        .string()
+        .describe("The domain name to delete"),
+    },
+    async ({ teamId, domainName }) => {
+      const resolvedTeamId = teamId || defaultTeamId;
+      if (!resolvedTeamId) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: No teamId provided and no default CS_TEAM_ID configured.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        await client.deleteDomain(resolvedTeamId, domainName);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Domain ${domainName} deleted successfully.`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error deleting domain: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  server.tool(
+    "verify_domain",
+    "Verify DNS configuration for a custom domain. Run this after setting up your DNS records.",
+    {
+      teamId: z
+        .string()
+        .optional()
+        .describe("Team ID (uses default if not provided)"),
+      domainName: z
+        .string()
+        .describe("The domain name to verify"),
+    },
+    async ({ teamId, domainName }) => {
+      const resolvedTeamId = teamId || defaultTeamId;
+      if (!resolvedTeamId) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Error: No teamId provided and no default CS_TEAM_ID configured.",
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      try {
+        const result = await client.verifyDomain(resolvedTeamId, domainName);
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Domain verification result for ${domainName}:\n\n${JSON.stringify(result, null, 2)}`,
+            },
+          ],
+        };
+      } catch (error: any) {
+        return {
+          content: [
+            { type: "text" as const, text: `Error verifying domain: ${error.message}` },
+          ],
+          isError: true,
+        };
+      }
+    }
+  );
 }
