@@ -143,7 +143,7 @@ function renderForm(opts: { oauthState: string; error?: string }): string {
       <input type="password" id="apiKey" name="apiKey" placeholder="Your Codesphere API key" required autofocus />
       <button type="submit">Connect</button>
     </form>
-    <div class="privacy">Your API key is encrypted and stored securely in your personal session. It is never shared with other users, never logged, and never visible in plaintext.</div>
+    <div class="privacy">Your API key is encrypted and stored securely in your personal session. It is never shared with other users, never logged, and never visible in plaintext. This project is <a href="https://github.com/LeonHartmann/codesphere-mcp" target="_blank">open source</a>.</div>
   </div>
 </body>
 </html>`;
