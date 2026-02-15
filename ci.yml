@@ -1,0 +1,15 @@
+schemaVersion: v0.2
+prepare:
+  steps:
+    - name: install
+      command: npm ci
+    - name: build
+      command: npm run build
+test:
+  steps:
+    - name: typecheck
+      command: npx tsc --noEmit
+run:
+  steps:
+    - name: start
+      command: npm start
